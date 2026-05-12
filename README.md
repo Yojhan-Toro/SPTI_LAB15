@@ -16,6 +16,63 @@ Everything else uses only the standard library: re, statistics, collections, sub
 
 ---
 
+## Part 1 — Concurrent Port Scanner
+
+### scanner_cli.py
+
+A fast async port scanner built with asyncio. Takes a target IP, a port range or list, and a concurrency limit, then reports which ports are open as a JSON output.
+
+```bash
+# scan ports 1-1024 on localhost
+python3 scanner_cli.py 127.0.0.1
+
+# scan specific ports
+python3 scanner_cli.py 192.168.1.10 --ports 22,80,443,8080
+
+# scan a wider range with higher concurrency and save to file
+python3 scanner_cli.py 192.168.1.10 --ports 1-10000 --rate 500 --output results.json
+```
+
+| Flag | Description | Default |
+|---|---|---|
+| target | IP address to scan | required |
+| --ports | Port range (1-1024) or list (22,80,443) | 1-1024 |
+| --rate | Max concurrent connections | 200 |
+| --timeout | Per-port timeout in seconds | 0.5 |
+| --output | Output file path, or stdout | stdout |
+
+The scanner uses asyncio with a Semaphore to cap concurrency. The reason asyncio was chosen over threading is that network scanning is almost entirely I/O bound the program spends most of its time waiting for responses, not computing anything. asyncio handles that with a single thread and a cooperative event loop, which is more efficient than spawning hundreds of OS threads. The Semaphore is what prevents the scanner from opening thousands of connections simultaneously, which would be noisy from a detection standpoint and could also crash fragile devices on the network.
+
+The --ports flag supports both ranges and comma-separated lists because in practice you often want to check a specific set of ports rather than a full range. The parse_ports function handles both formats and returns a sorted deduplicated list.
+
+Output is always structured JSON so the results can be piped into other tools or scripts without any additional parsing.
+
+---
+
+## Part 2 — Nmap XML Parser and SSH Enrichment
+
+### scan_parse.py
+
+Reads an nmap XML file produced with the -sV flag, extracts structured data for each live host, and optionally enriches hosts that have port 22 open by running ssh-keyscan to get the host key type. Writes the results to a JSON file.
+
+```bash
+# generate the nmap XML first
+nmap -sV --open -oX scan.xml 192.168.1.0/24
+
+# then parse and enrich it
+python3 scan_parse.py --input scan.xml --output hosts.json
+```
+
+| Flag | Description | Default |
+|---|---|---|
+| --input | Path to the nmap XML file | required |
+| --output | Path to the output JSON file | required |
+
+The script uses xml.etree.ElementTree from the standard library instead of a third-party nmap parser. That keeps the dependencies minimal and also means you have to understand the actual XML structure that nmap produces, which is useful knowledge when working with other tools that output XML.
+
+For each host the script only processes entries where the status is up and the port state is open, filtering out everything else. When a host has port 22 open, it calls ssh-keyscan via subprocess with a short timeout. If ssh-keyscan times out or the host does not respond, the field is set to null and the script moves on without crashing. The SSH enrichment step failing on one host never affects the results for the others.
+
+
 ## Part 3 — Log Analysis and Anomaly Detection
 
 ### auth_analysis.py
