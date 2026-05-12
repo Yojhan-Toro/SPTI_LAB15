@@ -1,0 +1,19 @@
+2026-05-11 20:58:11,047 INFO === recon.py start — target=scanme.nmap.org mode=domain ===
+2026-05-11 20:58:11,048 INFO STEP: whois (domain)
+2026-05-11 20:58:11,048 INFO RUN: whois scanme.nmap.org
+2026-05-11 20:58:12,071 INFO OK (1462 bytes)
+2026-05-11 20:58:12,075 INFO STEP: DNS records
+2026-05-11 20:58:12,075 INFO RUN: dig +short scanme.nmap.org A
+2026-05-11 20:58:12,505 INFO OK (12 bytes)
+2026-05-11 20:58:12,505 INFO RUN: dig +short scanme.nmap.org MX
+2026-05-11 20:58:12,682 INFO OK (0 bytes)
+2026-05-11 20:58:12,682 INFO RUN: dig +short scanme.nmap.org NS
+2026-05-11 20:58:12,860 INFO OK (0 bytes)
+2026-05-11 20:58:12,861 INFO RUN: dig +short scanme.nmap.org TXT
+2026-05-11 20:58:13,121 INFO OK (0 bytes)
+2026-05-11 20:58:13,121 INFO STEP: HTTP headers
+2026-05-11 20:58:13,121 INFO RUN: curl -sI --max-time 10 http://scanme.nmap.org
+2026-05-11 20:58:13,564 INFO OK (148 bytes)
+2026-05-11 20:58:13,565 INFO WRITE results.json (293 bytes)
+2026-05-11 20:58:13,565 INFO WRITE report.md (684 bytes)
+2026-05-11 20:58:13,565 INFO === recon.py done — output dir: sample_output ===

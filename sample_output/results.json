@@ -1,0 +1,19 @@
+{
+  "whois_domain": {
+    "registrar": null,
+    "registration_date": null,
+    "expiry_date": null,
+    "registrant_org": null
+  },
+  "dns": {
+    "A": [
+      "45.33.32.156"
+    ],
+    "MX": [],
+    "NS": [],
+    "TXT": []
+  },
+  "http_headers": {
+    "server": "Apache/2.4.7 (Ubuntu)"
+  }
+}
