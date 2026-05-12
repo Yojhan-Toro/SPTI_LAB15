@@ -1,10 +1,6 @@
 """
 recon.py — Part 4: Integrated Reconnaissance Tool
 Performs multi-stage active reconnaissance on a domain or IP address.
-
-Usage:
-    python3 recon.py example.com [--mode domain] [--output ./out/] [--verbose]
-    python3 recon.py 1.2.3.4    [--mode ip]     [--output ./out/] [--verbose]
 """
 
 import argparse
@@ -19,8 +15,6 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
 
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def is_ip(target: str) -> bool:
     """Return True if target looks like an IPv4 address."""
@@ -67,7 +61,6 @@ def run(cmd: list[str], timeout: int = 30) -> tuple[bool, str]:
         return False, f"[error: {exc}]"
 
 
-# ── Domain-mode steps ─────────────────────────────────────────────────────────
 
 def step_whois_domain(domain: str) -> dict:
     ok, raw = run(["whois", domain], timeout=20)
@@ -110,9 +103,6 @@ def step_http_headers(domain: str) -> dict:
                    "strict-transport-security", "x-frame-options",
                    "x-content-type-options"]
     return {k: headers[k] for k in interesting if k in headers}
-
-
-# ── IP-mode steps ─────────────────────────────────────────────────────────────
 
 def parse_nmap_xml(xml_text: str) -> list[dict]:
     """Parse nmap XML output and return a list of port dicts."""
@@ -166,9 +156,6 @@ def step_whois_ip(ip: str) -> dict:
         "country":      extract(r"(?:Country|country):\s*(.+)"),
     }
 
-
-# ── Report generator ──────────────────────────────────────────────────────────
-
 SECURITY_HEADERS = [
     "content-security-policy",
     "strict-transport-security",
@@ -220,7 +207,7 @@ def generate_markdown(target: str, mode: str, results: dict) -> str:
         else:
             lines.append("| — | No open ports found | |")
 
-    else:  # domain
+    else: 
         dns = results.get("dns", {})
         a_records = ", ".join(dns.get("A", [])) or "N/A"
         lines.append(f"| A Records | {a_records} |")
@@ -239,7 +226,6 @@ def generate_markdown(target: str, mode: str, results: dict) -> str:
                 lines.append("_None_")
             lines.append("")
 
-        # HTTP headers
         headers = results.get("http_headers", {})
         lines += ["\n## HTTP Response Headers\n"]
         if "error" in headers:
@@ -266,8 +252,6 @@ def generate_markdown(target: str, mode: str, results: dict) -> str:
     return "\n".join(lines)
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
-
 def main():
     parser = argparse.ArgumentParser(
         description="Integrated reconnaissance tool — domain and IP modes"
@@ -284,13 +268,11 @@ def main():
     target = args.target
     mode   = args.mode or ("ip" if is_ip(target) else "domain")
 
-    # Output directory
     ts        = datetime.now().strftime("%Y%m%d_%H%M%S")
     safe_name = re.sub(r"[^\w.\-]", "_", target)
     out_dir   = Path(args.output) if args.output else Path(f"recon_{safe_name}_{ts}")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Logging — goes to audit.log AND stderr (if --verbose)
     handlers: list[logging.Handler] = [
         logging.FileHandler(out_dir / "audit.log")
     ]
@@ -307,7 +289,6 @@ def main():
 
     results: dict = {}
 
-    # ── Domain mode ──────────────────────────────────────────────────────────
     if mode == "domain":
         if require_tool("whois"):
             logging.info("STEP: whois (domain)")
@@ -321,7 +302,6 @@ def main():
             logging.info("STEP: HTTP headers")
             results["http_headers"] = step_http_headers(target)
 
-    # ── IP mode ──────────────────────────────────────────────────────────────
     else:
         if require_tool("nmap"):
             logging.info("STEP: nmap -sV --top-ports 100")
@@ -335,7 +315,6 @@ def main():
             logging.info("STEP: whois (IP)")
             results["whois_ip"] = step_whois_ip(target)
 
-    # ── Write outputs ─────────────────────────────────────────────────────────
     results_path = out_dir / "results.json"
     results_path.write_text(json.dumps(results, indent=2))
     logging.info("WRITE results.json (%d bytes)", results_path.stat().st_size)

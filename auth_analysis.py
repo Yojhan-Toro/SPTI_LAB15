@@ -1,9 +1,6 @@
 """
-auth_analysis.py — Part 3A
+auth_analysis.py
 Analyzes SSH authentication logs to detect brute-force attempts.
-
-Usage:
-    python3 auth_analysis.py --input auth.log
 """
 
 import re
@@ -37,7 +34,6 @@ def analyze_auth_log(log_path: str, threshold: int = 10) -> dict:
             success_by_ip[m_ok.group(2)] += 1
             total_successes += 1
 
-    # IPs over threshold, sorted descending
     brute_force_ips = sorted(
         [(ip, cnt) for ip, cnt in failed_by_ip.items() if cnt >= threshold],
         key=lambda x: x[1],
@@ -95,7 +91,7 @@ def main():
 
     results = analyze_auth_log(args.input, args.threshold)
     print_report(results)
-    return results          # also usable as a module
+    return results 
 
 
 if __name__ == "__main__":

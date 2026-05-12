@@ -2,9 +2,6 @@
 log_analysis.py — Part 3 C/D/E
 Analyzes Apache-style access logs for attack patterns and traffic anomalies.
 Also calls auth_analysis to produce a combined report.md.
-
-Usage:
-    python3 log_analysis.py --access access.log [--auth auth.log] [--report report.md]
 """
 
 import re
@@ -14,7 +11,6 @@ from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 
-# ── Regex patterns ────────────────────────────────────────────────────────────
 
 LOG_PATTERN = re.compile(
     r'(?P<ip>\S+) \S+ \S+ \[(?P<ts>[^\]]+)\] '
@@ -22,7 +18,6 @@ LOG_PATTERN = re.compile(
     r'(?P<status>\d+) (?P<size>\S+)'
 )
 
-# Hour extracted from Combined Log Format timestamp
 HOUR_PATTERN = re.compile(r'\d{2}/\w+/\d{4}:(\d{2}):\d{2}:\d{2}')
 
 ATTACK_PATTERNS = re.compile(
@@ -41,9 +36,6 @@ ATTACK_PATTERNS = re.compile(
     r"|(\/wp-admin\/|\/\.env|\/\.git\/|\/phpmyadmin)",
     re.IGNORECASE,
 )
-
-
-# ── Core analysis functions ───────────────────────────────────────────────────
 
 def analyze_access_log(log_path: str) -> dict:
     ip_counts:      Counter = Counter()
@@ -64,7 +56,6 @@ def analyze_access_log(log_path: str) -> dict:
         ip_counts[ip] += 1
         status_counts[status] += 1
 
-        # Extract hour for anomaly detection
         hm = HOUR_PATTERN.search(ts_raw)
         if hm:
             hourly_counts[hm.group(1)] += 1
@@ -108,9 +99,6 @@ def detect_traffic_anomalies(hourly_counts: dict[str, int],
             )
     return anomalies
 
-
-# ── Combined report generator ─────────────────────────────────────────────────
-
 def generate_report(
     access_results: dict,
     anomalies: list[str],
@@ -125,8 +113,6 @@ def generate_report(
         f"\n_Generated: {now}_\n",
         "---\n",
     ]
-
-    # ── Section 1: Suspicious web requests ──────────────────────────────────
     lines += [
         "## 1. Suspicious Web Requests\n",
         f"Detected **{len(access_results['suspicious_requests'])}** potentially malicious requests.\n",
@@ -135,14 +121,12 @@ def generate_report(
         lines.append("| IP | Path | Status |")
         lines.append("|---|---|---|")
         for req in access_results["suspicious_requests"]:
-            # Escape pipe characters inside paths
             safe_path = req['path'].replace("|", "\\|")
             lines.append(f"| {req['ip']} | `{safe_path}` | {req['status']} |")
     else:
         lines.append("_No suspicious requests found._")
     lines.append("")
 
-    # ── Section 2: Top IPs ───────────────────────────────────────────────────
     lines += [
         "## 2. Top 5 IPs by Request Volume\n",
         "| Rank | IP Address | Requests |",
@@ -152,7 +136,6 @@ def generate_report(
         lines.append(f"| {rank} | {ip} | {cnt} |")
     lines.append("")
 
-    # ── Section 3: HTTP status distribution ─────────────────────────────────
     lines += [
         "## 3. HTTP Status Code Distribution\n",
         "| Status | Count |",
@@ -162,7 +145,6 @@ def generate_report(
         lines.append(f"| {status} | {cnt} |")
     lines.append("")
 
-    # ── Section 4: Traffic anomalies ─────────────────────────────────────────
     lines += ["## 4. Traffic Anomaly Detection (3σ rule)\n"]
     if anomalies:
         for a in anomalies:
@@ -171,7 +153,6 @@ def generate_report(
         lines.append("_No anomalous hours detected._")
     lines.append("")
 
-    # ── Section 5: Auth log (optional) ───────────────────────────────────────
     if auth_results:
         lines += [
             "## 5. SSH Authentication Analysis\n",
@@ -201,9 +182,6 @@ def generate_report(
     Path(output_path).write_text("\n".join(lines))
     print(f"[+] Report written to {output_path}")
 
-
-# ── CLI ───────────────────────────────────────────────────────────────────────
-
 def main():
     parser = argparse.ArgumentParser(
         description="Web access log analyzer with anomaly detection"
@@ -219,7 +197,6 @@ def main():
     access_results = analyze_access_log(args.access)
     anomalies      = detect_traffic_anomalies(access_results["hourly_counts"], args.sigma)
 
-    # Print findings to stdout
     print(f"\n[+] Suspicious requests : {len(access_results['suspicious_requests'])}")
     print(f"[+] Top 5 IPs           :")
     for ip, cnt in access_results["top_ips"]:
@@ -236,7 +213,6 @@ def main():
     else:
         print("      None detected.")
 
-    # Auth log (optional)
     auth_results = None
     if args.auth:
         from auth_analysis import analyze_auth_log, print_report
@@ -244,7 +220,6 @@ def main():
         auth_results = analyze_auth_log(args.auth)
         print_report(auth_results)
 
-    # Combined markdown report
     generate_report(access_results, anomalies, auth_results, args.report)
 
 
