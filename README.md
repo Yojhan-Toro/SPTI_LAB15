@@ -1,9 +1,12 @@
-# Security Scripting Lab — Parts 3 and 4
+# Security Scripting Lab15 SPTI
+
+- Yojhan Toro 
+- Ivan Cubillos 
 
 ## Requirements
 
 - Python 3.10+
-- External tools (already installed on Kali Linux): nmap, whois, dig, curl, ssh-keyscan
+- External tools: nmap, whois, dig, curl, ssh-keyscan
 
 ```bash
 pip install python-dotenv
